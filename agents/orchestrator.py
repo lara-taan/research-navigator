@@ -24,10 +24,10 @@ class OrchestratorAgent:
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = "llama-3.3-70b-versatile"
         self.name = "OrchestratorAgent"
-        # Initialize sub-agents directly for pipeline
+        
         self.search_agent = SearchAgent()
         self.synthesis_agent = SynthesisAgent()
-        # ADK orchestrator agent for framework compliance
+        
         self.adk_agent = orchestrator_adk_agent
 
     def understand_query(self, user_input: str) -> dict:

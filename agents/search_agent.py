@@ -14,11 +14,11 @@ class SearchAgent:
     """
 
     def __init__(self):
-        # Initialize Groq client with API key from .env
+        
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = "llama-3.3-70b-versatile"
         self.name = "SearchAgent"
-        # Initialize arxiv client (new API style)
+       
         self.arxiv_client = arxiv.Client()
 
     def search_arxiv(self, query: str, max_results: int = 8) -> list:
@@ -85,7 +85,7 @@ Return ONLY a valid JSON array like this, nothing else:
         text = response.choices[0].message.content.strip()
 
         try:
-            # Strip markdown code fences if present
+            
             if "```" in text:
                 text = text.split("```")[1]
                 if text.startswith("json"):

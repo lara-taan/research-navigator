@@ -8,8 +8,7 @@ import json
 search_agent = SearchAgent()
 synthesis_agent = SynthesisAgent()
 
-# --- Define ADK Tools ---
-# ADK requires tools to be plain functions wrapped with FunctionTool
+# Define ADK Tools 
 
 def search_and_rank_papers(query: str) -> str:
     """
@@ -39,11 +38,11 @@ def synthesize_research_report(query: str, papers_json: str) -> str:
     report = synthesis_agent.run(query, papers)
     return report
 
-# --- Wrap functions as ADK Tools ---
+# Wrap functions as ADK Tools 
 search_tool = FunctionTool(search_and_rank_papers)
 synthesis_tool = FunctionTool(synthesize_research_report)
 
-# --- Define ADK Sub-Agents ---
+# Define ADK Sub-Agents 
 search_adk_agent = Agent(
     name="search_agent",
     model="gemini-2.0-flash",
@@ -64,7 +63,7 @@ synthesis_adk_agent = Agent(
     tools=[synthesis_tool]
 )
 
-# --- Define ADK Orchestrator Agent ---
+# Define ADK Orchestrator Agent 
 orchestrator_adk_agent = Agent(
     name="orchestrator_agent",
     model="gemini-2.0-flash",
