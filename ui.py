@@ -10,15 +10,20 @@ def run_agent(user_query, progress=gr.Progress()):
     if not user_query.strip():
         return "⚠️ Please enter a research topic.", "", ""
 
-    progress(0.1, desc="🧠 Understanding your query...")
+    progress(0, desc="Understanding your query...")
+    
+    # Step 1
+    progress(0.1, desc="Understanding your query...")
+    
     result = orchestrator.run(
         user_query,
         progress_callback=lambda msg: progress(0.5, desc=msg)
     )
+    
     progress(1.0, desc="✅ Done!")
 
     if not result["success"]:
-        return f"❌ {result['error']}", "", ""
+        return f"❌ No papers found for **'{user_query}'**. Try a more specific academic topic like 'transformer architecture' or 'federated learning privacy'.", "", ""
 
     # Format ranked papers for display
     papers_md = ""
@@ -48,7 +53,7 @@ with gr.Blocks(title="ResearchNavigator", theme=gr.themes.Soft(), css="""
 
     gr.Markdown("""
 # ResearchNavigator
-### Multi-Agent Literature Review System
+### Multi-Agent Literature Review System 
 
 Enter any research topic → AI agents automatically find, rank, and synthesize the most relevant papers for you.
     """)
@@ -63,7 +68,7 @@ Enter any research topic → AI agents automatically find, rank, and synthesize 
         with gr.Column(scale=1):
             submit_btn = gr.Button("Research This", variant="primary", size="lg")
 
-    status_out = gr.Markdown()
+    status_out = gr.Markdown(value="*Enter a topic above and click Research This to get started.*")
 
     with gr.Tabs():
         with gr.Tab("Synthesis Report"):
@@ -92,5 +97,4 @@ if __name__ == "__main__":
     demo.launch(
         show_error=True,
         show_api=False,
-        footer="",
     )

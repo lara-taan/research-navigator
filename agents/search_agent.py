@@ -23,24 +23,29 @@ class SearchAgent:
 
     def search_arxiv(self, query: str, max_results: int = 8) -> list:
         """Search ArXiv — completely free, no API key needed."""
-        search = arxiv.Search(
-            query=query,
-            max_results=max_results,
-            sort_by=arxiv.SortCriterion.Relevance
-        )
+        try:
+            search = arxiv.Search(
+                query=query,
+                max_results=max_results,
+                sort_by=arxiv.SortCriterion.Relevance
+            )
 
-        papers = []
-        for paper in self.arxiv_client.results(search):
-            papers.append({
-                "id": paper.entry_id.split("/")[-1],
-                "title": paper.title,
-                "authors": [str(a) for a in paper.authors[:3]],
-                "abstract": paper.summary[:600],
-                "published": str(paper.published.date()),
-                "url": paper.entry_id
-            })
+            papers = []
+            for paper in self.arxiv_client.results(search):
+                papers.append({
+                    "id": paper.entry_id.split("/")[-1],
+                    "title": paper.title,
+                    "authors": [str(a) for a in paper.authors[:3]],
+                    "abstract": paper.summary[:600],
+                    "published": str(paper.published.date()),
+                    "url": paper.entry_id
+                })
 
-        return papers
+            return papers
+
+        except Exception as e:
+            print(f"[{self.name}] ArXiv search error: {e}")
+            return []
 
     def rank_papers(self, query: str, papers: list) -> list:
         """
@@ -96,7 +101,14 @@ Return ONLY a valid JSON array like this, nothing else:
         """Main entry point — called by Orchestrator."""
         print(f"[{self.name}] Searching ArXiv for: {query}")
         papers = self.search_arxiv(query)
+
+        # If no papers found return empty list
+        if not papers:
+            print(f"[{self.name}] No papers found for query: {query}")
+            return []
+
         print(f"[{self.name}] Found {len(papers)} papers. Ranking with Groq...")
         ranked = self.rank_papers(query, papers)
         print(f"[{self.name}] Done. Top {len(ranked)} papers selected.")
         return ranked
+

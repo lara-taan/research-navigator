@@ -78,13 +78,13 @@ Return ONLY the JSON, nothing else."""
 
         # Step 1
         if progress_callback:
-            progress_callback("🧠 Understanding your query...")
+            progress_callback("Understanding your query...")
         query_info = self.understand_query(user_input)
         print(f"[{self.name}] Clean query: {query_info}")
 
         # Step 2
         if progress_callback:
-            progress_callback("🔍 Searching ArXiv for papers...")
+            progress_callback("Searching ArXiv for papers...")
         papers = self.search_agent.run(query_info["search_query"])
 
         if not papers:
@@ -97,7 +97,7 @@ Return ONLY the JSON, nothing else."""
 
         # Step 3
         if progress_callback:
-            progress_callback("✍️ Writing synthesis report...")
+            progress_callback("Writing synthesis report...")
         report = self.synthesis_agent.run(query_info["topic_name"], papers)
 
         print(f"[{self.name}] Pipeline complete.")
