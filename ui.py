@@ -33,7 +33,7 @@ def format_history() -> str:
     """Format search history for display."""
     if not search_history:
         return "*No searches yet.*"
-    history_md = "### 🕐 Recent Searches\n"
+    history_md = "### Recent Searches\n"
     for i, item in enumerate(reversed(search_history), 1):
         history_md += f"**{i}.** {item['query']} *(found {item['papers']} papers, {item['year_start']}–{item['year_end']})*\n\n"
     return history_md
@@ -101,6 +101,51 @@ def run_agent(user_query, paper_count, year_start, year_end, progress=gr.Progres
 
     status = f"✅ Analyzed **{int(paper_count)} papers** from ArXiv ({int(year_start)}–{int(year_end)}) · Showing top **{result['papers_found']} most relevant** on: **{result['topic']}**"
     return status, result["report"], papers_md, gr.DownloadButton(value=report_path, visible=True), gr.DownloadButton(value=bibtex_path, visible=True), format_history()
+
+
+def run_comparison(topic1, topic2, paper_count, year_start, year_end, progress=gr.Progress()):
+    """Run two topics side by side and compare results."""
+
+    if not topic1.strip() or not topic2.strip():
+        return "⚠️ Please enter both topics.", "", ""
+
+    progress(0.1, desc=f"Researching '{topic1}'...")
+    result1 = orchestrator.run(
+        topic1,
+        paper_count=int(paper_count),
+        year_start=int(year_start),
+        year_end=int(year_end)
+    )
+
+    progress(0.6, desc=f"Researching '{topic2}'...")
+    result2 = orchestrator.run(
+        topic2,
+        paper_count=int(paper_count),
+        year_start=int(year_start),
+        year_end=int(year_end)
+    )
+
+    progress(1.0, desc="✅ Comparison ready!")
+
+    status = f"✅ Compared **{topic1}** vs **{topic2}**"
+
+    # Format left column
+    if result1["success"]:
+        left = f"## {result1['topic']}\n"
+        left += f"*{result1['papers_found']} papers found*\n\n"
+        left += result1["report"]
+    else:
+        left = f"❌ No papers found for **{topic1}**."
+
+    # Format right column
+    if result2["success"]:
+        right = f"## {result2['topic']}\n"
+        right += f"*{result2['papers_found']} papers found*\n\n"
+        right += result2["report"]
+    else:
+        right = f"❌ No papers found for **{topic2}**."
+
+    return status, left, right
 
 
 # Build UI
@@ -172,6 +217,24 @@ Enter any research topic → AI agents automatically find, rank, and synthesize 
                 )
         with gr.Tab("Ranked Papers"):
             papers_out = gr.Markdown()
+        with gr.Tab("Compare Two Topics"):
+            gr.Markdown("### Compare two research topics side by side")
+            with gr.Row():
+                compare_topic1 = gr.Textbox(
+                    label="Topic 1",
+                    placeholder="e.g. 'federated learning'",
+                    lines=2
+                )
+                compare_topic2 = gr.Textbox(
+                    label="Topic 2",
+                    placeholder="e.g. 'differential privacy'",
+                    lines=2
+                )
+            compare_btn = gr.Button("Compare Topics", variant="primary")
+            compare_status = gr.Markdown()
+            with gr.Row():
+                compare_left = gr.Markdown()
+                compare_right = gr.Markdown()
         with gr.Tab("Search History"):
             history_out = gr.Markdown(value="*No searches yet.*")
 
@@ -190,6 +253,12 @@ Enter any research topic → AI agents automatically find, rank, and synthesize 
         fn=run_agent,
         inputs=[query_input, paper_count, year_start, year_end],
         outputs=[status_out, report_out, papers_out, download_btn, bibtex_btn, history_out]
+    )
+
+    compare_btn.click(
+        fn=run_comparison,
+        inputs=[compare_topic1, compare_topic2, paper_count, year_start, year_end],
+        outputs=[compare_status, compare_left, compare_right]
     )
 
 if __name__ == "__main__":
