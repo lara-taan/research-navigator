@@ -1,6 +1,7 @@
 import arxiv
 import json
 import os
+from datetime import datetime
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -10,28 +11,44 @@ class SearchAgent:
     """
     Search Agent: Finds and ranks research papers from ArXiv.
     Uses Groq (Llama 3.3 70B) to score papers by relevance.
+    Falls back to smaller models if rate limit is hit.
+    Supports year filtering for targeted literature search.
     This agent is called by the Orchestrator.
     """
 
     def __init__(self):
-        
+        # Initialize Groq client with API key from .env
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = "llama-3.3-70b-versatile"
+        # Try main model first, fall back to smaller if rate limited
+        self.models = [
+            "llama-3.3-70b-versatile",
+            "llama3-8b-8192",
+            "gemma2-9b-it"
+        ]
         self.name = "SearchAgent"
-       
+        # Initialize arxiv client (new API style)
         self.arxiv_client = arxiv.Client()
 
-    def search_arxiv(self, query: str, max_results: int = 8) -> list:
-        """Search ArXiv — completely free, no API key needed."""
+    def search_arxiv(self, query: str, max_results: int = 8, year_start: int = 2000, year_end: int = 2026) -> list:
+        """
+        Search ArXiv and filter by year range.
+        Fetches extra results to account for year filtering.
+        """
         try:
+            # Fetch more results to account for year filtering
             search = arxiv.Search(
                 query=query,
-                max_results=max_results,
+                max_results=max_results * 3,
                 sort_by=arxiv.SortCriterion.Relevance
             )
 
             papers = []
             for paper in self.arxiv_client.results(search):
+                # Filter by year range
+                pub_year = paper.published.year
+                if pub_year < year_start or pub_year > year_end:
+                    continue
+
                 papers.append({
                     "id": paper.entry_id.split("/")[-1],
                     "title": paper.title,
@@ -40,6 +57,9 @@ class SearchAgent:
                     "published": str(paper.published.date()),
                     "url": paper.entry_id
                 })
+
+                if len(papers) >= max_results:
+                    break
 
             return papers
 
@@ -51,6 +71,7 @@ class SearchAgent:
         """
         Use Groq/Llama to rank papers by relevance.
         Returns top 5 papers with relevance scores and reasons.
+        Tries multiple models if rate limit is hit.
         """
         papers_text = json.dumps(papers, indent=2)
 
@@ -76,16 +97,28 @@ Return ONLY a valid JSON array like this, nothing else:
   }}
 ]"""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
+        response = None
+        for model in self.models:
+            try:
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.3
+                )
+                print(f"[{self.name}] Using model: {model}")
+                break
+            except Exception as e:
+                print(f"[{self.name}] Model {model} failed: {e}. Trying next...")
+                continue
+
+        if not response:
+            print(f"[{self.name}] All models failed, returning unranked papers.")
+            return papers[:5]
 
         text = response.choices[0].message.content.strip()
 
         try:
-            
+            # Strip markdown code fences if present
             if "```" in text:
                 text = text.split("```")[1]
                 if text.startswith("json"):
@@ -97,12 +130,11 @@ Return ONLY a valid JSON array like this, nothing else:
             print(f"[{self.name}] Ranking parse error: {e}")
             return papers[:5]
 
-    def run(self, query: str) -> list:
+    def run(self, query: str, max_results: int = 8, year_start: int = 2000, year_end: int = 2026) -> list:
         """Main entry point — called by Orchestrator."""
-        print(f"[{self.name}] Searching ArXiv for: {query}")
-        papers = self.search_arxiv(query)
+        print(f"[{self.name}] Searching ArXiv for: {query} ({year_start}-{year_end})")
+        papers = self.search_arxiv(query, max_results=max_results, year_start=year_start, year_end=year_end)
 
-        # If no papers found return empty list
         if not papers:
             print(f"[{self.name}] No papers found for query: {query}")
             return []
@@ -111,4 +143,3 @@ Return ONLY a valid JSON array like this, nothing else:
         ranked = self.rank_papers(query, papers)
         print(f"[{self.name}] Done. Top {len(ranked)} papers selected.")
         return ranked
-

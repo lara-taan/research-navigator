@@ -4,8 +4,6 @@ from groq import Groq
 from dotenv import load_dotenv
 from agents.search_agent import SearchAgent
 from agents.synthesis_agent import SynthesisAgent
-
-# Import ADK orchestrator
 from agents.adk_agent import orchestrator_adk_agent
 
 load_dotenv()
@@ -16,7 +14,7 @@ class OrchestratorAgent:
     - Uses Google ADK for agent orchestration framework
     - Receives the user's natural language query
     - Extracts a clean search query using Groq
-    - Delegates to SearchAgent then SynthesisAgent via ADK
+    - Delegates to SearchAgent then SynthesisAgent
     - Returns the final structured result to the UI
     """
 
@@ -24,10 +22,10 @@ class OrchestratorAgent:
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = "llama-3.3-70b-versatile"
         self.name = "OrchestratorAgent"
-        
+        # Initialize sub-agents
         self.search_agent = SearchAgent()
         self.synthesis_agent = SynthesisAgent()
-        
+        # ADK orchestrator agent for framework compliance
         self.adk_agent = orchestrator_adk_agent
 
     def understand_query(self, user_input: str) -> dict:
@@ -65,16 +63,17 @@ Return ONLY the JSON, nothing else."""
                 "topic_name": user_input
             }
 
-    def run(self, user_input: str, progress_callback=None) -> dict:
+    def run(self, user_input: str, paper_count: int = 8, year_start: int = 2000, year_end: int = 2026, progress_callback=None) -> dict:
         """
         Full pipeline:
         Step 1 — Understand intent (Orchestrator)
-        Step 2 — Find and rank papers (Search Agent via ADK)
-        Step 3 — Write synthesis report (Synthesis Agent via ADK)
+        Step 2 — Find and rank papers (Search Agent)
+        Step 3 — Write synthesis report (Synthesis Agent)
         Step 4 — Return result to UI
         """
         print(f"\n[{self.name}] Query received: {user_input}")
         print(f"[{self.name}] ADK Agent: {self.adk_agent.name} initialized")
+        print(f"[{self.name}] Paper count: {paper_count} | Years: {year_start}-{year_end}")
 
         # Step 1
         if progress_callback:
@@ -85,12 +84,17 @@ Return ONLY the JSON, nothing else."""
         # Step 2
         if progress_callback:
             progress_callback("Searching ArXiv for papers...")
-        papers = self.search_agent.run(query_info["search_query"])
+        papers = self.search_agent.run(
+            query_info["search_query"],
+            max_results=paper_count,
+            year_start=year_start,
+            year_end=year_end
+        )
 
         if not papers:
             return {
                 "success": False,
-                "error": "No papers found. Try rephrasing your topic.",
+                "error": "No papers found. Try rephrasing your topic or adjusting the year range.",
                 "papers": [],
                 "report": ""
             }

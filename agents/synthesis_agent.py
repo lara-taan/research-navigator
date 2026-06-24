@@ -8,17 +8,24 @@ load_dotenv()
 class SynthesisAgent:
     """
     Synthesis Agent: Reads ranked papers and writes a structured research report.
+    Falls back to smaller models if rate limit is hit.
     This is the final step in the pipeline — the main value delivered to the user.
     """
 
     def __init__(self):
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = "llama-3.3-70b-versatile"
+        # Try main model first, fall back to smaller if rate limited
+        self.models = [
+            "llama-3.3-70b-versatile",
+            "llama3-8b-8192",
+            "gemma2-9b-it"
+        ]
         self.name = "SynthesisAgent"
 
     def synthesize(self, query: str, papers: list) -> str:
         """
         Generate a structured markdown research report from ranked papers.
+        Tries multiple models if rate limit is hit.
         """
         papers_text = json.dumps(papers, indent=2)
 
@@ -51,12 +58,23 @@ Write a comprehensive research synthesis report in Markdown. Use exactly this st
 
 Be specific. Cite paper titles when making claims. Write clearly for an intelligent non-expert."""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4,
-            max_tokens=2000
-        )
+        response = None
+        for model in self.models:
+            try:
+                response = self.client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.4,
+                    max_tokens=2000
+                )
+                print(f"[{self.name}] Using model: {model}")
+                break
+            except Exception as e:
+                print(f"[{self.name}] Model {model} failed: {e}. Trying next...")
+                continue
+
+        if not response:
+            return "❌ All models are currently rate limited. Please try again in a few minutes."
 
         return response.choices[0].message.content
 
