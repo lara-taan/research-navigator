@@ -265,6 +265,8 @@ Open your browser at `http://localhost:7860`
 
 ### Agent Behavior
 ![Agent Behavior](assets/agent_behavior.png)
+
+![Agent Behavior](assets/agent_behavior2.png)
 ---
 
 ## AI Agent Concepts Demonstrated
