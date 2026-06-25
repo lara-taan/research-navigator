@@ -298,7 +298,7 @@ This project was built as part of the **Kaggle x Google 5-Day AI Agents Intensiv
 
 The application is deployed on **Hugging Face Spaces**:
 
-🔗 **Live Demo:** https://huggingface.co/spaces/larataan/research-navigator
+**Live Demo:** https://huggingface.co/spaces/larataan/research-navigator
 
 ---
 
