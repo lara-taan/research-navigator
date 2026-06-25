@@ -63,7 +63,7 @@ Return ONLY the JSON, nothing else."""
                 "topic_name": user_input
             }
 
-    def run(self, user_input: str, paper_count: int = 8, year_start: int = 2000, year_end: int = 2026, progress_callback=None) -> dict:
+    def run(self, user_input: str, paper_count: int = 8, year_start: int = 2000, year_end: int = 2026, category: str = "", progress_callback=None) -> dict:
         """
         Full pipeline:
         Step 1 — Understand intent (Orchestrator)
@@ -73,7 +73,7 @@ Return ONLY the JSON, nothing else."""
         """
         print(f"\n[{self.name}] Query received: {user_input}")
         print(f"[{self.name}] ADK Agent: {self.adk_agent.name} initialized")
-        print(f"[{self.name}] Paper count: {paper_count} | Years: {year_start}-{year_end}")
+        print(f"[{self.name}] Paper count: {paper_count} | Years: {year_start}-{year_end} | Category: {category}")
 
         # Step 1
         if progress_callback:
@@ -88,7 +88,8 @@ Return ONLY the JSON, nothing else."""
             query_info["search_query"],
             max_results=paper_count,
             year_start=year_start,
-            year_end=year_end
+            year_end=year_end,
+            category=category
         )
 
         if not papers:
@@ -113,3 +114,4 @@ Return ONLY the JSON, nothing else."""
             "papers": papers,
             "report": report
         }
+

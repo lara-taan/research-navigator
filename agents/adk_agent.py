@@ -38,7 +38,7 @@ def synthesize_research_report(query: str, papers_json: str) -> str:
     report = synthesis_agent.run(query, papers)
     return report
 
-# Wrap functions as ADK Tools 
+
 search_tool = FunctionTool(search_and_rank_papers)
 synthesis_tool = FunctionTool(synthesize_research_report)
 

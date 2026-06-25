@@ -12,7 +12,7 @@ class SearchAgent:
     Search Agent: Finds and ranks research papers from ArXiv.
     Uses Groq (Llama 3.3 70B) to score papers by relevance.
     Falls back to smaller models if rate limit is hit.
-    Supports year filtering for targeted literature search.
+    Supports year filtering and field category filtering.
     This agent is called by the Orchestrator.
     """
 
@@ -29,15 +29,26 @@ class SearchAgent:
         # Initialize arxiv client (new API style)
         self.arxiv_client = arxiv.Client()
 
-    def search_arxiv(self, query: str, max_results: int = 8, year_start: int = 2000, year_end: int = 2026) -> list:
+    def search_arxiv(self, query: str, max_results: int = 8, year_start: int = 2000, year_end: int = 2026, category: str = "") -> list:
         """
-        Search ArXiv and filter by year range.
+        Search ArXiv and filter by year range and category.
         Fetches extra results to account for year filtering.
         """
         try:
+            # Build query with category filter if provided
+            if category:
+                # Combine user query with category filter
+                cats = category.strip().split()
+                cat_filter = " OR ".join([f"cat:{c}" for c in cats])
+                full_query = f"({query}) AND ({cat_filter})"
+            else:
+                full_query = query
+
+            print(f"[{self.name}] Full ArXiv query: {full_query}")
+
             # Fetch more results to account for year filtering
             search = arxiv.Search(
-                query=query,
+                query=full_query,
                 max_results=max_results * 3,
                 sort_by=arxiv.SortCriterion.Relevance
             )
@@ -118,7 +129,7 @@ Return ONLY a valid JSON array like this, nothing else:
         text = response.choices[0].message.content.strip()
 
         try:
-            # Strip markdown code fences if present
+            
             if "```" in text:
                 text = text.split("```")[1]
                 if text.startswith("json"):
@@ -130,10 +141,10 @@ Return ONLY a valid JSON array like this, nothing else:
             print(f"[{self.name}] Ranking parse error: {e}")
             return papers[:5]
 
-    def run(self, query: str, max_results: int = 8, year_start: int = 2000, year_end: int = 2026) -> list:
+    def run(self, query: str, max_results: int = 8, year_start: int = 2000, year_end: int = 2026, category: str = "") -> list:
         """Main entry point — called by Orchestrator."""
-        print(f"[{self.name}] Searching ArXiv for: {query} ({year_start}-{year_end})")
-        papers = self.search_arxiv(query, max_results=max_results, year_start=year_start, year_end=year_end)
+        print(f"[{self.name}] Searching ArXiv for: {query} ({year_start}-{year_end}) category: {category}")
+        papers = self.search_arxiv(query, max_results=max_results, year_start=year_start, year_end=year_end, category=category)
 
         if not papers:
             print(f"[{self.name}] No papers found for query: {query}")
