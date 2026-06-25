@@ -284,7 +284,7 @@ This project was built as part of the **Kaggle x Google 5-Day AI Agents Intensiv
 
 ---
 
-## 🔒 Security
+## Security
 
 - All API keys stored in `.env` file and excluded from version control via `.gitignore`
 - Deployed on Hugging Face Spaces using **Secrets** 
@@ -298,7 +298,7 @@ This project was built as part of the **Kaggle x Google 5-Day AI Agents Intensiv
 
 The application is deployed on **Hugging Face Spaces**:
 
-🔗 **Live Demo:** [https://huggingface.co/spaces/larataan/research-navigator](https://huggingface.co/spaces/larataan/research-navigator)
+🔗 **Live Demo:** https://huggingface.co/spaces/larataan/research-navigator
 
 ---
 
@@ -312,11 +312,7 @@ The application is deployed on **Hugging Face Spaces**:
 - **Email export** — Send synthesis reports directly to the user's email
 - **Citation graph** — Visualize how papers cite each other
 
----
 
-## License
-
-This project is licensed under the MIT License.
 
 
 
